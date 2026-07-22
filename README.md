@@ -1,12 +1,13 @@
-# Remi Base
+# Reminders API Base
 
-Remi Base is a small FastAPI backend for saving and managing personal reminders.
-It is designed as the foundation for future assistants, bots and automations.
+Reminders API Base is a small FastAPI backend for saving and managing personal
+reminders. It is designed as the foundation for future assistants, bots and
+automations.
 
-The goal of this repository is intentionally modest: provide a clean API layer
-and database access layer that can store reminders reliably. Notification
-workers, users, API keys, delivery channels and richer AI behavior are planned
-as future extensions, not as part of this base version.
+The goal of this branch is intentionally modest: provide a clean API layer and
+database access layer that can store reminders reliably. Notification workers,
+users, API keys, delivery channels and assistant/AI behavior are planned as
+future extensions, not as part of this API-only version.
 
 ## What this project demonstrates
 
@@ -17,8 +18,6 @@ as future extensions, not as part of this base version.
 - Basic CRUD operations.
 - Clear error handling for invalid dates, missing reminders and database
   failures.
-- A small optional assistant layer, isolated from the API code, that can call
-  the reminder functions.
 - Unit tests that run without requiring PostgreSQL or Redis.
 
 ## Current scope
@@ -33,7 +32,6 @@ This version can:
 - delete a reminder;
 - validate impossible dates, such as April 31;
 - expose those operations through HTTP endpoints;
-- expose optional assistant-compatible functions outside the API package.
 
 This version does not yet:
 
@@ -44,13 +42,14 @@ This version does not yet:
 - authenticate bots with API keys;
 - choose delivery channels;
 - integrate directly with Telegram, email, webhooks or Alexa.
+- include a virtual assistant layer.
 
 Those features belong to the next project built on top of this base.
 
 ## Architecture
 
 ```text
-Client / bot / assistant
+Client / bot / future assistant
         ↓
 FastAPI routes
         ↓
@@ -75,10 +74,6 @@ api/
   schemas.py           Request validation models
   exceptions.py        Project-specific errors
   setup/               Database/table setup helpers
-
-assistant/
-  agent.py             Optional virtual assistant definition
-  tools.py             Optional assistant tool wrappers
 
 tests/
   test_routes.py       API route tests
@@ -184,17 +179,6 @@ curl -X POST "http://127.0.0.1:8000/reminders/" \
   -H "Content-Type: application/json" \
   -d '{"day": 14, "month": 4, "text": "Juanito birthday"}'
 ```
-
-## Assistant layer
-
-The optional assistant layer lives in `assistant/`.
-
-It defines a virtual assistant named `Remi`, whose tools call the same service
-layer used by the API. This keeps the assistant thin: it interprets natural
-language, while the backend owns the actual reminder behavior.
-
-This repository keeps the assistant as an optional layer. The API and database
-code can be used without it.
 
 ## Tests
 
