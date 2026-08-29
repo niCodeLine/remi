@@ -1,4 +1,8 @@
-"""PostgreSQL operations for reminders."""
+"""PostgreSQL operations for reminders.
+
+This is Remi's main service layer. Routes and assistant tools call these
+functions instead of touching SQL directly.
+"""
 
 from types import SimpleNamespace
 
@@ -10,6 +14,7 @@ from api.services_redis import redisDelete, redisGet, redisSet
 
 logger = log.ger(__name__, "DEBUG", file_name="api")
 
+# February allows 29 here because reminders are month/day based, not year based.
 MONTH_DAYS = {
     1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30,
     7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31,
@@ -23,10 +28,14 @@ MONTH_NAMES = {
 
 
 def cache_key(reminder_id: int) -> str:
+    """Return the Redis key used for a single reminder lookup."""
+
     return f"get_by_id:{reminder_id}"
 
 
 def validate_date(day: int, month: int) -> None:
+    """Reject dates such as April 31 before they reach the database."""
+
     if day > MONTH_DAYS[month]:
         raise InvalidReminderDate(
             f"{MONTH_NAMES[month]} does not have {day} days."
@@ -34,6 +43,8 @@ def validate_date(day: int, month: int) -> None:
 
 
 def _reminder_data(reminder_id, day, month, text, created_at) -> dict:
+    """Convert a raw database row into Remi's public reminder shape."""
+
     return {
         "reminder_id": reminder_id,
         "day": day,
@@ -45,6 +56,8 @@ def _reminder_data(reminder_id, day, month, text, created_at) -> dict:
 
 
 def _connection():
+    """Open PostgreSQL and translate connection failures into project errors."""
+
     try:
         return get_PG_connection()
     except Exception as exc:
@@ -53,6 +66,8 @@ def _connection():
 
 
 def create(*, day: int, month: int, text: str):
+    """Create a reminder and return a small response object for API/tool layers."""
+
     validate_date(day, month)
     conn = _connection()
     try:
@@ -83,6 +98,8 @@ def create(*, day: int, month: int, text: str):
 
 
 def get_by_id(reminder_id: int):
+    """Get one reminder by id, using Redis as a soft cache when available."""
+
     query = cache_key(reminder_id)
     cached = redisGet(query)
     if cached:
@@ -124,6 +141,8 @@ def get(
     month: int | None = None,
     text: str | None = None,
 ):
+    """List reminders, optionally filtered by day, month or text."""
+
     conn = _connection()
     try:
         query = f"""
@@ -168,12 +187,16 @@ def update(
     month: int | None = None,
     text: str | None = None,
 ):
+    """Update any reminder field while preserving values not provided."""
+
     if day is None and month is None and text is None:
         raise ValueError("At least one field must be provided.")
 
     conn = _connection()
     try:
         with conn.cursor() as cursor:
+            # Read the existing row first so partial updates can keep old values
+            # and date validation can check the final day/month pair.
             cursor.execute(
                 f"""
                 SELECT day, month, text
@@ -214,6 +237,7 @@ def update(
     finally:
         conn.close()
 
+    # The cached single-reminder response is now stale.
     redisDelete(cache_key(reminder_id))
     reminder = _reminder_data(
         reminder_id, new_day, new_month, new_text, created_at
@@ -226,6 +250,8 @@ def update(
 
 
 def delete(reminder_id: int):
+    """Delete a reminder and return the deleted data."""
+
     conn = _connection()
     try:
         with conn.cursor() as cursor:

@@ -1,24 +1,17 @@
-'''Tables to be created. For better scalability in a future.'''
+"""Create the PostgreSQL tables needed by Remi."""
 
-# TODO:
-# Replace user_id's definition to:
-# INTEGER REFERENCES users(id)
-# when table "users" is implemented.
-
+from api.constants import MAIN_REMINDERS_TABLE
 from api.database import get_PG_connection
 import api.log as log
-from api.constants import MAIN_REMINDERS_TABLE
 
-logger = log.ger(
-    __name__,
-    'DEBUG',
-    file_name='api'
-)
+logger = log.ger(__name__, "DEBUG", file_name="api")
 
 
+# Table definitions are kept in a dictionary so more tables can be added later
+# without changing the loop in `create_tables()`.
 TABLES = {
     MAIN_REMINDERS_TABLE:
-        '''
+        """
         id SERIAL PRIMARY KEY,
 
         user_id INTEGER DEFAULT 1,
@@ -29,37 +22,36 @@ TABLES = {
         text TEXT NOT NULL,
 
         created_at TIMESTAMP DEFAULT NOW()
-        ''',
+        """,
 }
 
+
 def create_tables():
+    """Create all declared tables if they do not already exist."""
 
     conn = get_PG_connection()
-    cursor = conn.cursor() #type: ignore
+    cursor = conn.cursor()  # type: ignore
 
     try:
         for tableName, tableDefinition in TABLES.items():
             cursor.execute(
-                f'''
+                f"""
                 CREATE TABLE IF NOT EXISTS {tableName} (
                 {tableDefinition}
                 )
-                '''
+                """
             )
-            
             logger.info(f'Table "{tableName}" ready.')
 
-        conn.commit() #type: ignore
-        logger.info(f'Tables committed to database.')
-    
-    except Exception as e:
-        logger.exception(f'Create table failed: {e}')
+        conn.commit()  # type: ignore
+        logger.info("Tables committed to database.")
+    except Exception as exc:
+        logger.exception(f"Create table failed: {exc}")
         raise
-
     finally:
         cursor.close()
-        conn.close() #type: ignore
+        conn.close()  # type: ignore
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     create_tables()

@@ -1,47 +1,50 @@
+"""FastAPI application entrypoint for Remi."""
+
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
-from .routes.reminders import router as reminders_router
+
 import api.log as log
 import api.setup.setup as setup
+from .routes.reminders import router as reminders_router
 
-# setting logger
-logger = log.ger(
-    __name__,
-    'DEBUG',
-    file_name='api'
-)
+logger = log.ger(__name__, "DEBUG", file_name="api")
 
-# setting API
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    
-    # executes on startup
-    logger.info("Starting up.")
+    """Prepare storage on startup and log shutdown.
 
-    # ensure databases and tables are ready
+    This is where Remi makes sure PostgreSQL, Redis and the reminders table are
+    reachable before serving requests.
+    """
+
+    logger.info("Starting up.")
     setup.main()
-    
+
     yield
-    
-    # at shutdown
+
     logger.info("Shutting down.")
 
+
 app = FastAPI(
-    title = 'Reminders API',
-    description = 'API for managing reminders and memos',
-    version='0.2.0',
-    lifespan=lifespan
+    title="Reminders API",
+    description="API for managing reminders and memos",
+    version="0.2.0",
+    lifespan=lifespan,
 )
+
 
 @app.get("/")
 async def root():
-    logger.info("root endpoint accessed")
+    """Health endpoint used to check that the API is alive."""
 
+    logger.info("root endpoint accessed")
     return {
         "message": "API running.",
-        "docs": "Find documentation at /docs"
+        "docs": "Find documentation at /docs",
     }
-logger.debug('api set and runnning')
+
 
 app.include_router(reminders_router)
-logger.info('API re-running')
+logger.debug("API configured.")
