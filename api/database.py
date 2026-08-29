@@ -1,25 +1,23 @@
-'''
-Databases connections.
-'''
+"""Database connection helpers.
+
+The service layer imports these functions instead of creating PostgreSQL or
+Redis clients directly. That keeps connection details in one small file.
+"""
 
 import psycopg2
 import redis
+
 import api.log as log
 from api.settings import settings
 
-logger = log.ger(
-    __name__,
-    'DEBUG',
-    file_name='api'
-)
+logger = log.ger(__name__, "DEBUG", file_name="api")
 
 
-def get_PG_connection(): # PostGres connection
-    '''
-    Create a PostgreSQL instance.
-    '''
-    logger.debug('Accessing PG connection.')
-    
+def get_PG_connection():
+    """Open a PostgreSQL connection using the values from `.env`."""
+
+    logger.debug("Accessing PostgreSQL connection.")
+
     return psycopg2.connect(
         host=settings.POSTGRES_HOST,
         database=settings.POSTGRES_DB,
@@ -29,20 +27,20 @@ def get_PG_connection(): # PostGres connection
     )
 
 
-def get_RD_connection(db: int = 0): # ReDis connection
-    '''
-    Create a Redis instance.
+def get_RD_connection(db: int = 0):
+    """Open a Redis connection.
 
-    :param db: Data/base Channel to connect with (0-16). Default 0.
-    :type db: int
-    '''
-    logger.debug('Accessing RD connection.')
+    `db` is the Redis database number. The project uses database 0 by default.
+    `decode_responses=True` returns strings instead of bytes, which keeps the
+    cache code easier to read.
+    """
 
+    logger.debug("Accessing Redis connection.")
 
     return redis.Redis(
         host=settings.REDIS_HOST,
         port=settings.REDIS_PORT,
         password=settings.REDIS_PASSWORD,
         db=db,
-        decode_responses=True # return text insead of binari
+        decode_responses=True,
     )
