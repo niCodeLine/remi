@@ -1,28 +1,49 @@
-# Reminders API Base
+# Remi Basic
 
-Self-hosted reminders API built for quick capture and local storage. FastAPI,
-PostgreSQL and Redis, without the assistant layer.
+> The API-only version of Remi.
 
-This branch keeps only the backend base: HTTP endpoints, database access and a
-small cache layer. It is meant to stay simple enough to reuse from bots,
-assistants, workers or other projects later.
+This branch keeps Remi at its simplest: a reminders API, PostgreSQL storage and
+Redis cache helpers. No assistant layer, no workers, no notification platform.
+Just the backend base.
 
-## Versions
+It exists because sometimes the small version is the useful one. If you want to
+study the service logic, reuse the database layer, or start a different project
+from a clean API, this is the branch to open.
 
-- `main` — API + optional assistant layer.
-- `basic` — API, PostgreSQL and Redis only.
+## The idea
 
-## Features
+```text
+HTTP request  →  validate reminder  →  save in PostgreSQL  →  read it later
+```
 
-- Quick reminder capture through a REST API.
-- PostgreSQL-backed storage.
-- Optional Redis cache for repeated reads.
-- Basic CRUD operations for reminders.
-- Date validation for impossible month/day combinations.
+That is the whole shape. The code is intentionally direct so the moving pieces
+are easy to follow.
+
+## Remi, Remi Basic & Memo
+
+| Project | Shape | Good for |
+| :--- | :--- | :--- |
+| Remi `basic` | API and database only | Studying or reusing the backend core |
+| Remi `main` | API plus optional assistant layer | Connecting the same backend logic to an assistant |
+| [Memo](https://github.com/niCodeLine/memos) | Full reminder platform | Workers, API keys, delivery attempts and channels |
+
+```text
+Remi Basic = store reminders.
+Remi main  = store reminders and expose them to an assistant.
+Memo       = store reminders, protect access, watch due dates and dispatch them.
+```
+
+## What is inside
+
+- FastAPI routes for reminder CRUD.
+- PostgreSQL as the source of truth.
+- Redis helpers for lightweight caching.
+- Validation for impossible day/month combinations.
+- Small service layer separated from the HTTP routes.
 - Docker Compose file for local PostgreSQL and Redis.
-- Unit tests for routes and service behavior.
+- Unit tests that mock external services where needed.
 
-## Quick Start
+## Quick start
 
 Install Python dependencies:
 
@@ -30,13 +51,13 @@ Install Python dependencies:
 pip install -r requirements.txt
 ```
 
-Create a local environment file:
+Create your local environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Start PostgreSQL and Redis with Docker:
+Start PostgreSQL and Redis:
 
 ```bash
 docker compose up -d
@@ -48,7 +69,7 @@ Run the API:
 uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Open:
+Open the docs:
 
 ```text
 http://127.0.0.1:8000/docs
@@ -56,7 +77,7 @@ http://127.0.0.1:8000/docs
 
 ## Configuration
 
-Default `.env.example` values match the included `docker-compose.yml`.
+The default `.env.example` values match the included `docker-compose.yml`.
 
 ```text
 POSTGRES_HOST=localhost
@@ -70,19 +91,19 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 ```
 
-PostgreSQL is required. Redis is used as cache; the API is designed to keep
-working from PostgreSQL if Redis is unavailable.
+PostgreSQL is required. Redis is optional in spirit: it helps with caching, but
+the reminder data belongs to PostgreSQL.
 
-## API
+## API map
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| GET | `/` | Health check |
-| POST | `/reminders/` | Create a reminder |
-| GET | `/reminders/` | List or filter reminders |
-| GET | `/reminders/{id}` | Get one reminder |
-| PATCH | `/reminders/{id}` | Update a reminder |
-| DELETE | `/reminders/{id}` | Delete a reminder |
+| `GET` | `/` | Health check |
+| `POST` | `/reminders/` | Create a reminder |
+| `GET` | `/reminders/` | List or filter reminders |
+| `GET` | `/reminders/{id}` | Get one reminder |
+| `PATCH` | `/reminders/{id}` | Update a reminder |
+| `DELETE` | `/reminders/{id}` | Delete a reminder |
 
 Example:
 
@@ -92,7 +113,7 @@ curl -X POST "http://127.0.0.1:8000/reminders/" \
   -d '{"day": 14, "month": 4, "text": "Juanito birthday"}'
 ```
 
-## Structure
+## Project structure
 
 ```text
 api/
@@ -118,18 +139,13 @@ python -m unittest discover -v
 The tests mock database operations where needed, so they do not require a
 running PostgreSQL or Redis instance.
 
-## Roadmap
+## Where to go next
 
-This branch is the basic layer. A larger reminder platform can build on top of
-it with:
+Use this branch if you want the quiet base.
 
-- an assistant layer;
-- Docker installation for the full application;
-- background workers for due reminders;
-- users, profiles and a local admin;
-- API keys for bots and integrations;
-- delivery channels such as Telegram, email, webhooks or Alexa;
-- AI-assisted urgency, channel and time suggestions.
+Use `main` if you want the assistant-facing version of Remi.
 
-See [docs/NEXT_PROJECT.md](docs/NEXT_PROJECT.md) for the possible expansion.
+Use [Memo](https://github.com/niCodeLine/memos) if you want the larger platform
+with API keys, workers, retries and delivery channels.
 
+Small base first. Bigger ideas later.
