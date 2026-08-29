@@ -1,6 +1,13 @@
 from types import SimpleNamespace
+import os
 from unittest import TestCase
 from unittest.mock import patch
+
+os.environ.setdefault("POSTGRES_HOST", "localhost")
+os.environ.setdefault("POSTGRES_DB", "reminders")
+os.environ.setdefault("POSTGRES_USER", "reminders_user")
+os.environ.setdefault("POSTGRES_PASSWORD", "reminders_password")
+os.environ.setdefault("REDIS_HOST", "localhost")
 
 from fastapi.testclient import TestClient
 
