@@ -1,4 +1,11 @@
 from unittest import TestCase
+import os
+
+os.environ.setdefault("POSTGRES_HOST", "localhost")
+os.environ.setdefault("POSTGRES_DB", "reminders")
+os.environ.setdefault("POSTGRES_USER", "reminders_user")
+os.environ.setdefault("POSTGRES_PASSWORD", "reminders_password")
+os.environ.setdefault("REDIS_HOST", "localhost")
 
 from api.exceptions import InvalidReminderDate
 from api.services_db import validate_date
