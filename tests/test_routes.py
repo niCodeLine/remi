@@ -1,7 +1,7 @@
 from types import SimpleNamespace
-import os
 from unittest import TestCase
 from unittest.mock import patch
+import os
 
 os.environ.setdefault("POSTGRES_HOST", "localhost")
 os.environ.setdefault("POSTGRES_DB", "reminders")
@@ -67,6 +67,59 @@ class ReminderRouteTests(TestCase):
         response = self.client.patch("/reminders/1", json={})
 
         self.assertEqual(response.status_code, 422)
+
+
+    @patch("api.routes.reminders.services_db.update")
+    def test_update_returns_updated_reminder(self, update):
+        update.return_value = SimpleNamespace(
+            message="Reminder with id 1 updated.",
+            reminder={
+                "reminder_id": 1,
+                "day": 15,
+                "month": 4,
+                "month_name": "April",
+                "text": "Updated birthday",
+                "created_at": "2026-06-28T12:00:00",
+            },
+        )
+
+        response = self.client.patch(
+            "/reminders/1",
+            json={"day": 15, "text": "Updated birthday"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["reminder"]["day"], 15)
+        update.assert_called_once_with(1, day=15, text="Updated birthday")
+
+    @patch("api.routes.reminders.services_db.update")
+    def test_update_missing_reminder_returns_404(self, update):
+        update.side_effect = ReminderNotFound("Reminder with id 99 not found.")
+
+        response = self.client.patch("/reminders/99", json={"text": "Nope"})
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"], "Reminder with id 99 not found.")
+
+    @patch("api.routes.reminders.services_db.delete")
+    def test_delete_returns_deleted_reminder(self, delete):
+        delete.return_value = SimpleNamespace(
+            message="Reminder with id 1 deleted.",
+            reminder={
+                "reminder_id": 1,
+                "day": 14,
+                "month": 4,
+                "month_name": "April",
+                "text": "Birthday",
+                "created_at": "2026-06-28T12:00:00",
+            },
+        )
+
+        response = self.client.delete("/reminders/1")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["reminder"]["reminder_id"], 1)
+        delete.assert_called_once_with(1)
 
     @patch("api.routes.reminders.services_db.get")
     def test_empty_collection_is_successful(self, get_reminders):
